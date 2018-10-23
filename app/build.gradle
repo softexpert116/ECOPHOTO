@@ -1,0 +1,43 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "com.clevery.android.ecophoto"
+        minSdkVersion 23
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'rebel.xml'
+    }
+    productFlavors {
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support:design:28.0.0'
+    implementation 'com.android.support:support-v4:28.0.0'
+    implementation 'com.hbb20:ccp:1.7.1'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    implementation 'de.hdodenhof:circleimageview:2.1.0'
+    implementation 'com.theartofdev.edmodo:android-image-cropper:2.7.0'
+    implementation 'com.github.bumptech.glide:glide:4.3.1'
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'org.apache.httpcomponents:httpmime:4.5.2'
+}
