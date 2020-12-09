@@ -1,5 +1,6 @@
 package com.clevery.android.ecophoto.Fragments;
 
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -10,12 +11,21 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
+import android.util.DisplayMetrics;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.clevery.android.ecophoto.Adapter.WaitGridAdapter;
@@ -44,6 +54,7 @@ public class WaitingFragment extends Fragment {
     Button btn_clear, btn_send;
     GridView gridView;
     boolean flag_send = false;
+    String send_option = "Print";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -64,7 +75,7 @@ public class WaitingFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 StudentModel model = arrayList.get(i);
-                Toast.makeText(activity, "Student ID: "+ model.student_id + "\nSchool Code: " + model.school_code + "\nClassroom: " + model.classroom, Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, "Type: "+ model.type + "\nStudent ID: "+ model.student_id + "\nSchool Code: " + model.school_code + "\nClassroom: " + model.classroom, Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -73,9 +84,7 @@ public class WaitingFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 if (activity.online) {
-                    Intent i = new Intent(activity, SecretActivity.class);
-                    startActivity(i);
-                    activity.overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
+                    openSubmitDialog();
                 } else {
                     Toast.makeText(activity, "Couldn't send photos under offline!", Toast.LENGTH_SHORT).show();
                 }
@@ -106,6 +115,37 @@ public class WaitingFragment extends Fragment {
         AsyncTaskRunner runner = new AsyncTaskRunner();
         runner.execute("loading async task");
         return v;
+    }
+    private void openSubmitDialog() {
+        final Dialog dlg = new Dialog(activity);
+        Window window = dlg.getWindow();
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        int width = metrics.widthPixels;
+        int height = metrics.heightPixels;
+        final View view = getLayoutInflater().inflate(R.layout.dialog_send_option, null);
+        dlg.setContentView(view);
+        window.setGravity(Gravity.CENTER);
+        RadioGroup type = (RadioGroup)view.findViewById(R.id.type);
+        send_option = "Print";
+        type.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                RadioButton b = (RadioButton) group.findViewById(checkedId);
+                send_option = b.getText().toString();
+            }
+        });
+        Button btn_submit = (Button)view.findViewById(R.id.btn_send);
+        btn_submit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(activity, SecretActivity.class);
+                startActivity(i);
+                activity.overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
+                dlg.dismiss();
+            }
+        });
+        dlg.show();
+        dlg.getWindow().setLayout((int)(width*0.95f), ViewGroup.LayoutParams.WRAP_CONTENT);
     }
     public void refreshGridView() {
         swipeRefreshLayout.setVisibility(View.VISIBLE);
@@ -145,6 +185,8 @@ public class WaitingFragment extends Fragment {
                     .addParam("school_code", model.school_code)
                     .addParam("classroom", model.classroom)
                     .addParam("photo", model.photo)
+                    .addParam("send_option", send_option)
+                    .addParam("photo_type", model.type)
                     .addParam("user_id", App.readPreference(App.MY_ID, ""))
                     .addParam("date", date)
                     .sendRequest(callback);

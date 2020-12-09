@@ -2,7 +2,9 @@ package com.clevery.android.ecophoto.Fragments;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -11,8 +13,10 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.IdRes;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.CardView;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -28,6 +32,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,6 +45,9 @@ import com.clevery.android.ecophoto.MainActivity;
 import com.clevery.android.ecophoto.Models.StudentModel;
 import com.clevery.android.ecophoto.R;
 import com.clevery.android.ecophoto.Utils.Utils;
+import com.clevery.android.ecophoto.httpModule.RequestBuilder;
+import com.clevery.android.ecophoto.httpModule.ResponseElement;
+import com.clevery.android.ecophoto.httpModule.RunanbleCallback;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
@@ -54,11 +63,13 @@ public class PhotoFragment extends Fragment {
     ImageView sel_photo;
     ImageView[] img_photo = new ImageView[3];
     Button[] btn_photo = new Button[3];
-
+    RadioGroup radioGroup;
+    private ProgressDialog mDialog;
+    String student_id, school_code, classroom, type;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_photo, container, false);
+        final View v = inflater.inflate(R.layout.fragment_photo, container, false);
         App.hideKeyboard(activity);
         edit_student_id = (EditText)v.findViewById(R.id.edit_student_id);
         edit_school_code = (EditText)v.findViewById(R.id.edit_school_code);
@@ -139,14 +150,26 @@ public class PhotoFragment extends Fragment {
                 }
             });
         }
-
+        radioGroup = (RadioGroup)v.findViewById(R.id.radio_group);
+        RadioButton radio_free = (RadioButton) v.findViewById(R.id.radio_card);
+        RadioButton radio_paid = (RadioButton) v.findViewById(R.id.radio_normal);
+        initPhotoType();
+        radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, @IdRes int checkedId) {
+                RadioButton rb= (RadioButton) v.findViewById(checkedId);
+                activity.frag_photo_type = rb.getText().toString();
+            }
+        });
         Button btn_save = (Button)v.findViewById(R.id.btn_save);
+
         btn_save.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String student_id = edit_student_id.getText().toString().trim().toLowerCase();
-                String school_code = edit_school_code.getText().toString().trim().toLowerCase();
-                String classroom = edit_classroom.getText().toString().trim().toLowerCase();
+                student_id = edit_student_id.getText().toString().trim().toLowerCase();
+                school_code = edit_school_code.getText().toString().trim().toLowerCase();
+                classroom = edit_classroom.getText().toString().trim().toLowerCase();
+                type = activity.frag_photo_type;
                 if (student_id.length()*school_code.length()*classroom.length() == 0) {
                     Toast.makeText(activity, "Please fill in all fields", Toast.LENGTH_SHORT).show();
                     return;
@@ -155,43 +178,131 @@ public class PhotoFragment extends Fragment {
                     Toast.makeText(activity, "Please capture Image!", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                Bitmap selectedImage = null;
-                try {
-                    final InputStream imageStream = activity.getContentResolver().openInputStream(activity.frag_selUri);
-                    selectedImage = BitmapFactory.decodeStream(imageStream);
-                }catch (Exception e) {
-                    e.printStackTrace();
-                }
-                String encodedImage = Utils.encodeToBase64(selectedImage);
-                StudentModel model = new StudentModel(0, student_id, school_code, classroom, encodedImage, "");
-                ArrayList<StudentModel> arrayList = App.readPreference_waiting_array();
-                if (arrayList == null) {
-                    arrayList = new ArrayList<>();
-                }
-                for (int i = 0; i < arrayList.size(); i++) {
-                    StudentModel model1 = arrayList.get(i);
-                    if (model1.student_id.equals(student_id)) {
-                        Toast.makeText(activity, "This student's photo already exist! If you want to change, please remove in waiting list.", Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                }
-                arrayList.add(model);
-                App.setPreference_waiting_array(arrayList);
-                Toast.makeText(activity, "Successfully saved!", Toast.LENGTH_SHORT).show();
-                // initialize -------------------
-                edit_student_id.setText("");
-                edit_school_code.setText("");
-                edit_classroom.setText("");
-                activity.frag_student_id = ""; activity.frag_classroom = ""; activity.frag_school_code = "";
-                activity.frag_selUri = null;
-                for (int i = 0; i < 3; i++) {
-                    activity.frag_imgUri[i] = null;
-                    setPersonPhoto(activity.frag_imgUri[i], img_photo[i]);
-                }
-                setPersonPhoto(activity.frag_selUri, sel_photo);
+                // check school code on backend
+                RequestBuilder requestBuilder = new RequestBuilder(App.serverUrl);
+                requestBuilder
+                        .addParam("type", "check_info")
+                        .addParam("student_id", student_id)
+                        .addParam("school_code", school_code)
+                        .sendRequest(callback);
+                mDialog = new ProgressDialog(activity);
+                mDialog.setTitle("Wait");
+                mDialog.setMessage("Checking school code and student ID...");
+                mDialog.setCancelable(false);
+                mDialog.show();
+                // --------------------------
+
+
             }
         });
         return v;
+    }
+    RunanbleCallback callback = new RunanbleCallback() {
+        @Override
+        public void finish(ResponseElement element) {
+            mDialog.dismiss();
+            int code = element.getStatusCode();
+            switch (code) {
+                case 200:
+                    Bitmap selectedImage = null;
+                    try {
+                        final InputStream imageStream = activity.getContentResolver().openInputStream(activity.frag_selUri);
+                        selectedImage = BitmapFactory.decodeStream(imageStream);
+                    }catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    String encodedImage = Utils.encodeToBase64(selectedImage);
+                    StudentModel model = new StudentModel(0, student_id, school_code, classroom, encodedImage, "", type);
+                    ArrayList<StudentModel> arrayList = App.readPreference_waiting_array();
+                    if (arrayList == null) {
+                        arrayList = new ArrayList<>();
+                    }
+                    for (int i = 0; i < arrayList.size(); i++) {
+                        StudentModel model1 = arrayList.get(i);
+                        if (model1.student_id.equals(student_id)) {
+
+                            Toast.makeText(activity, "This student's photo already exist! If you want to change, please remove in waiting list.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                    }
+                    arrayList.add(model);
+                    App.setPreference_waiting_array(arrayList);
+                    Toast.makeText(activity, "Successfully saved!", Toast.LENGTH_SHORT).show();
+                    // initialize -------------------
+                    edit_student_id.setText("");
+                    edit_school_code.setText("");
+                    edit_classroom.setText("");
+                    activity.frag_student_id = ""; activity.frag_classroom = ""; activity.frag_school_code = "";
+                    activity.frag_selUri = null;
+                    activity.frag_photo_type = "ID Card";
+                    for (int i = 0; i < 3; i++) {
+                        activity.frag_imgUri[i] = null;
+                        setPersonPhoto(activity.frag_imgUri[i], img_photo[i]);
+                    }
+                    setPersonPhoto(activity.frag_selUri, sel_photo);
+                    break;
+                case 301:
+                    new AlertDialog.Builder(activity)
+                            .setTitle("Warning")
+                            .setMessage("Invalid school code!")
+                            .setCancelable(false)
+                            .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                }
+                            }).show();
+                    break;
+                case 300:
+                    new AlertDialog.Builder(activity)
+                            .setTitle("Warning")
+                            .setMessage("Invalid student ID!")
+                            .setCancelable(false)
+                            .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                }
+                            }).show();
+                    break;
+                case 400:
+                    new AlertDialog.Builder(activity)
+                            .setTitle("Error")
+                            .setMessage("Server error!")
+                            .setCancelable(false)
+                            .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                }
+                            }).show();
+                    break;
+                case 500:
+                    new AlertDialog.Builder(activity)
+                            .setTitle("Error")
+                            .setMessage("Can't connect to server!")
+                            .setCancelable(false)
+                            .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                }
+                            }).show();
+                    break;
+                default:
+                    break;
+            }
+
+        }
+
+    };
+
+    private void initPhotoType() {
+        if (activity.frag_photo_type.equals("ID Card")) {
+            radioGroup.check(R.id.radio_card);
+        } else {
+            radioGroup.check(R.id.radio_normal);
+        }
     }
     private void deselectPhotos() {
         for (int i = 0; i < 3; i++) {
@@ -235,6 +346,7 @@ public class PhotoFragment extends Fragment {
         edit_student_id.setText(activity.frag_student_id);
         edit_school_code.setText(activity.frag_school_code);
         edit_classroom.setText(activity.frag_classroom);
+        initPhotoType();
         setPersonPhoto(activity.frag_selUri, sel_photo);
         for (int i = 0; i < 3; i++) {
             setPersonPhoto(activity.frag_imgUri[i], img_photo[i]);

@@ -50,8 +50,8 @@ public class App extends Application {
     public static String DATE_FORMAT = "MM/dd/yyyy";
     public static boolean secret_checked = false;
     private static final int MAX_SMS_MESSAGE_LENGTH = 160;
-//    public static String serverUrl = "http://192.168.0.139/ecophoto/index.php/mobile";
-    public static String serverUrl = "http://ecophoto.photos/index.php/mobile";
+    public static String serverUrl = "http://10.10.10.134/ecophoto_admin/index.php/mobile";
+//    public static String serverUrl = "https://ecophoto.photos/index.php/mobile";
 
     @Override
     public void onCreate() {

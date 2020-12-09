@@ -81,7 +81,8 @@ public class HistoryFragment extends Fragment {
                 String classroom = object.getString("classroom");
                 String photo = object.getString("photo");
                 String date = object.getString("date");
-                StudentModel model = new StudentModel(id, student_id, school_code, classroom, photo, date);
+                String type = object.getString("type");
+                StudentModel model = new StudentModel(id, student_id, school_code, classroom, photo, date, type);
                 arrayList.add(model);
             } catch (Exception e) {
                 e.printStackTrace();

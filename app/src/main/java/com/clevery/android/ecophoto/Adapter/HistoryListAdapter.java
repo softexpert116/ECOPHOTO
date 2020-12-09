@@ -65,6 +65,7 @@ public class HistoryListAdapter extends BaseAdapter
         TextView txt_schoolCode = view.findViewById(R.id.txt_schoolCode);
         TextView txt_classroom = view.findViewById(R.id.txt_classroom);
         TextView txt_date = view.findViewById(R.id.txt_date);
+        TextView txt_type = view.findViewById(R.id.txt_type);
         Glide.with(context).load(Utils.decodeBase64(model.photo))
                         .apply(new RequestOptions()
                                 .placeholder(R.drawable.person).centerCrop().dontAnimate()).into(img_person);
@@ -72,6 +73,7 @@ public class HistoryListAdapter extends BaseAdapter
         txt_schoolCode.setText(model.school_code);
         txt_classroom.setText(model.classroom);
         txt_date.setText(model.date);
+        txt_type.setText(model.type);
         return view;
     }
 

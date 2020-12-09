@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    >
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp"
+            >
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Send As"
+                android:textAlignment="center"
+                android:textSize="20dp"
+                android:textStyle="bold"
+                />
+            <RadioGroup
+                android:id="@+id/type"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical"
+                android:gravity="center_vertical"
+                >
+                <RadioButton
+                    android:id="@+id/print"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Print"
+                    android:checked="true"
+                    />
+                <RadioButton
+                    android:id="@+id/profile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Update profile"
+                    />
+                <RadioButton
+                    android:id="@+id/print_profile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Print and Update profile"
+                    />
+            </RadioGroup>
+            <Button
+                android:id="@+id/btn_send"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="20dp"
+                android:text="Send"
+                android:background="@color/colorPrimaryDark"
+                android:textColor="#fff"
+                android:layout_marginBottom="15dp"
+                />
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

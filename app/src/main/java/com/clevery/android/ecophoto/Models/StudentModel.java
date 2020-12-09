@@ -13,8 +13,9 @@ public class StudentModel implements Serializable {
     public String classroom;
     public String photo;
     public String date;
+    public String type;
 
-    public StudentModel(int _id, String student_id, String school_code, String classroom, String photo, String date)
+    public StudentModel(int _id, String student_id, String school_code, String classroom, String photo, String date, String type)
     {
         this._id = _id;
         this.student_id = student_id;
@@ -22,6 +23,7 @@ public class StudentModel implements Serializable {
         this.classroom = classroom;
         this.photo = photo;
         this.date = date;
+        this.type = type;
     }
     public StudentModel()
     {
@@ -31,5 +33,6 @@ public class StudentModel implements Serializable {
         this.classroom = "";
         this.photo = "";
         this.date = "";
+        this.type = "";
     }
 }

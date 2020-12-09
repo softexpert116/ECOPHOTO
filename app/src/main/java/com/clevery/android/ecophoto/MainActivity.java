@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     public Uri frag_selUri;
     public Uri[] frag_imgUri = new Uri[3];
     public int frag_photo_index = 0;
+    public String frag_photo_type = "ID Card";
     public static MainActivity mainActivity;
     //
     @Override
